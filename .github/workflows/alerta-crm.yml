@@ -10,16 +10,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar repositorio
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Instalar Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Instalar dependencias
-        run: pip install requests
+      - run: pip install requests
 
-      - name: Ejecutar script
+      - name: Ejecutar alerta
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          CRM_EMAIL: ${{ secrets.CRM_EMAIL }}
+          CRM_PASSWORD: ${{ secrets.CRM_PASSWORD }}
         run: python alerta_crm.py
