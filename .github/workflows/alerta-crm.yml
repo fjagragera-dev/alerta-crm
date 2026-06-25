@@ -5,9 +5,18 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   alerta:
     runs-on: ubuntu-latest
+
+    env:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+      CHAT_ID: ${{ secrets.CHAT_ID }}
+      CRM_EMAIL: ${{ secrets.CRM_EMAIL }}
+      CRM_PASSWORD: ${{ secrets.CRM_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -18,10 +27,10 @@ jobs:
 
       - run: pip install requests
 
-      - name: Ejecutar alerta
-        env:
-          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.CHAT_ID }}
-          CRM_EMAIL: ${{ secrets.CRM_EMAIL }}
-          CRM_PASSWORD: ${{ secrets.CRM_PASSWORD }}
-        run: python alerta_crm.py
+      - run: python alerta_crm.py
+
+      - name: Guardar leads vistos
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Actualizar leads vistos
+          file_pattern: seen_leads.json
