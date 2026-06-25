@@ -1,19 +1,22 @@
+import json
 import os
-import time
+from pathlib import Path
+
 import requests
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 CHAT_ID = os.environ["CHAT_ID"]
-
 CRM_EMAIL = os.environ["CRM_EMAIL"]
 CRM_PASSWORD = os.environ["CRM_PASSWORD"]
 
 BASE_URL = "https://crm-ventas-production.up.railway.app"
-CHECK_SECONDS = 15
+SEEN_FILE = Path("seen_leads.json")
+
 
 def enviar_telegram(texto):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    requests.post(url, data={"chat_id": CHAT_ID, "text": texto})
+    response = requests.post(url, data={"chat_id": CHAT_ID, "text": texto})
+    response.raise_for_status()
 
 
 def login_crm():
@@ -33,29 +36,57 @@ def obtener_leads(token):
     url = f"{BASE_URL}/api/leads"
     headers = {"Authorization": f"Bearer {token}"}
     response = requests.get(url, headers=headers)
-
-    if response.status_code in [401, 403]:
-        return None
-
     response.raise_for_status()
     return response.json()
+
+
+def cargar_ids_vistos():
+    if not SEEN_FILE.exists():
+        return set()
+
+    with SEEN_FILE.open("r", encoding="utf-8") as file:
+        data = json.load(file)
+
+    return set(data.get("ids_vistos", []))
+
+
+def guardar_ids_vistos(ids_vistos):
+    with SEEN_FILE.open("w", encoding="utf-8") as file:
+        json.dump(
+            {"ids_vistos": sorted(list(ids_vistos))},
+            file,
+            ensure_ascii=False,
+            indent=2,
+        )
 
 
 print("✅ Revisando CRM...")
 
 token = login_crm()
-leads_actuales = obtener_leads(token) or []
+leads = obtener_leads(token) or []
 
-if not leads_actuales:
-    print("No hay leads.")
+ids_vistos = cargar_ids_vistos()
+nuevos = []
+
+for lead in leads:
+    lead_id = str(lead.get("id"))
+
+    if lead_id and lead_id not in ids_vistos:
+        nuevos.append(lead)
+        ids_vistos.add(lead_id)
+
+if not nuevos:
+    print("No hay leads nuevos.")
 else:
-    ultimo_lead = leads_actuales[0]
+    for lead in nuevos:
+        nombre = lead.get("name") or lead.get("nombre") or "Sin nombre"
+        telefono = lead.get("phone") or lead.get("telefono") or "Sin teléfono"
+        email = lead.get("email") or "Sin email"
 
-    nombre = ultimo_lead.get("name") or ultimo_lead.get("nombre") or "Sin nombre"
-    telefono = ultimo_lead.get("phone") or ultimo_lead.get("telefono") or "Sin teléfono"
-    email = ultimo_lead.get("email") or "Sin email"
+        mensaje = f"🔔 NUEVO LEAD\n\n👤 {nombre}\n📞 {telefono}\n📧 {email}"
+        enviar_telegram(mensaje)
 
-    mensaje = f"🔔 REVISIÓN CRM\n\n👤 {nombre}\n📞 {telefono}\n📧 {email}"
-    enviar_telegram(mensaje)
+        print(f"📩 Lead enviado: {nombre}")
 
-    print(f"Lead enviado: {nombre}")
+guardar_ids_vistos(ids_vistos)
+print("✅ Revisión terminada.")
