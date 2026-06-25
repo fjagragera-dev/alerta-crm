@@ -1,15 +1,15 @@
+import os
 import time
 import requests
 
-BOT_TOKEN = "8957961762:AAHUj6Mc0-IF8lo2BIZXHnRsz7HJKEjqpBo"
-CHAT_ID = "442078436"
+BOT_TOKEN = os.environ["BOT_TOKEN"]
+CHAT_ID = os.environ["CHAT_ID"]
 
-CRM_EMAIL = "javier@orlander.es"
-CRM_PASSWORD = "Orlander2025!"
+CRM_EMAIL = os.environ["CRM_EMAIL"]
+CRM_PASSWORD = os.environ["CRM_PASSWORD"]
 
 BASE_URL = "https://crm-ventas-production.up.railway.app"
 CHECK_SECONDS = 15
-
 
 def enviar_telegram(texto):
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
