@@ -41,39 +41,21 @@ def obtener_leads(token):
     return response.json()
 
 
-print("✅ Iniciando avisador CRM...")
+print("✅ Revisando CRM...")
 
 token = login_crm()
-leads_iniciales = obtener_leads(token) or []
-ids_vistos = {lead.get("id") for lead in leads_iniciales}
+leads_actuales = obtener_leads(token) or []
 
-enviar_telegram("✅ Avisador CRM iniciado correctamente.")
-print("🚀 Revisando nuevos leads...")
+if not leads_actuales:
+    print("No hay leads.")
+else:
+    ultimo_lead = leads_actuales[0]
 
-while True:
-    try:
-        leads_actuales = obtener_leads(token)
+    nombre = ultimo_lead.get("name") or ultimo_lead.get("nombre") or "Sin nombre"
+    telefono = ultimo_lead.get("phone") or ultimo_lead.get("telefono") or "Sin teléfono"
+    email = ultimo_lead.get("email") or "Sin email"
 
-        if leads_actuales is None:
-            print("🔄 Token caducado. Renovando...")
-            token = login_crm()
-            leads_actuales = obtener_leads(token) or []
+    mensaje = f"🔔 REVISIÓN CRM\n\n👤 {nombre}\n📞 {telefono}\n📧 {email}"
+    enviar_telegram(mensaje)
 
-        for lead in leads_actuales:
-            lead_id = lead.get("id")
-
-            if lead_id not in ids_vistos:
-                ids_vistos.add(lead_id)
-
-                nombre = lead.get("name") or lead.get("nombre") or "Sin nombre"
-                telefono = lead.get("phone") or lead.get("telefono") or "Sin teléfono"
-                email = lead.get("email") or "Sin email"
-
-                mensaje = f"🔔 NUEVO LEAD\n\n👤 {nombre}\n📞 {telefono}\n📧 {email}"
-                enviar_telegram(mensaje)
-                print(f"📩 Nuevo lead enviado: {nombre}")
-
-    except Exception as e:
-        print(f"⚠️ Error: {e}")
-
-    time.sleep(CHECK_SECONDS)
+    print(f"Lead enviado: {nombre}")
