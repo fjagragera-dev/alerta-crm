@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: alerta-crm
+  cancel-in-progress: false
+
 jobs:
   alerta:
     runs-on: ubuntu-latest
@@ -20,6 +24,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - run: git pull origin main
 
       - uses: actions/setup-python@v5
         with:
